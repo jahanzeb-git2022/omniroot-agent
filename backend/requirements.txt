@@ -1,0 +1,12 @@
+flask==2.3.3
+flask-cors==4.0.0
+langchain==0.0.267
+langchain-community==0.0.13
+langchain-core==0.1.1
+langchain-huggingface==0.0.1
+python-dotenv==1.0.0
+requests==2.31.0
+transformers==4.35.0
+huggingface_hub==0.19.4
+torch==2.0.1
+gunicorn==21.2.0
