@@ -10,14 +10,19 @@ from backend.api.agent import create_agent
 from backend.tools.code_editor import CodeEditorTool
 from backend.tools.shell import ShellTool
 from backend.memory_manager import EnhancedMemoryManager
+from backend.api.llm_manager import DEFAULT_CONFIGS
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+# Store the current LLM configuration
+current_llm_config = DEFAULT_CONFIGS["huggingface"].copy()
+
 # Initialize enhanced memory manager
 memory_manager = EnhancedMemoryManager(
     history_path="/host_home/.agent_history",
-    max_buffer_workflows=5
+    max_buffer_workflows=5,
+    llm_config=current_llm_config
 )
 
 # Initialize tools
@@ -28,7 +33,8 @@ shell_tool = ShellTool()
 # We'll update the memory when a session/workflow is selected
 agent = create_agent(
     tools=[code_editor_tool, shell_tool],
-    memory=memory_manager.get_memory_for_llm()
+    memory=memory_manager.get_memory_for_llm(),
+    llm_config=current_llm_config
 )
 
 @app.route('/api/chat', methods=['POST'])
@@ -93,6 +99,111 @@ def get_workflow(session_id, workflow_id):
     if workflow:
         return jsonify(workflow)
     return jsonify({"error": "Workflow not found"}), 404
+
+@app.route('/api/model/config', methods=['GET'])
+def get_model_config():
+    """
+    API endpoint to get the current model configuration.
+    Returns: {"provider": str, "model_name": str, "model_kwargs": dict}
+    """
+    # Don't return the API key
+    config = current_llm_config.copy()
+    config.pop("api_key", None)
+    return jsonify(config)
+
+@app.route('/api/model/config', methods=['POST'])
+def update_model_config():
+    """
+    API endpoint to update the model configuration.
+    Expects: {"provider": str, "model_name": str, "api_key": str, "model_kwargs": dict}
+    Returns: {"status": "success"|"error", "message": str}
+    """
+    global current_llm_config, agent, memory_manager
+    
+    data = request.json
+    
+    # Update the configuration
+    current_llm_config.update({
+        "provider": data.get("provider", current_llm_config["provider"]),
+        "model_name": data.get("model_name", current_llm_config["model_name"]),
+        "model_kwargs": data.get("model_kwargs", current_llm_config["model_kwargs"])
+    })
+    
+    # Only update API key if provided
+    if "api_key" in data and data["api_key"]:
+        current_llm_config["api_key"] = data["api_key"]
+    
+    try:
+        # Reinitialize the agent with the new configuration
+        agent = create_agent(
+            tools=[code_editor_tool, shell_tool],
+            memory=memory_manager.get_memory_for_llm(),
+            llm_config=current_llm_config
+        )
+        
+        # Update memory manager's LLM
+        memory_manager = EnhancedMemoryManager(
+            history_path="/host_home/.agent_history",
+            max_buffer_workflows=5,
+            llm_config=current_llm_config
+        )
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Model updated to {current_llm_config['provider']}/{current_llm_config['model_name']}"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Error updating model: {str(e)}"
+        }), 400
+
+@app.route('/api/model/providers', methods=['GET'])
+def get_model_providers():
+    """
+    API endpoint to get available model providers and their models.
+    Returns: {"providers": [{"name": str, "models": [str]}]}
+    """
+    providers = [
+        {
+            "name": "huggingface",
+            "display_name": "Hugging Face",
+            "models": [
+                "Qwen/Qwen3-235B-A22B",
+                "meta-llama/Llama-2-70b-chat-hf",
+                "mistralai/Mistral-7B-Instruct-v0.2",
+                "google/gemma-7b-it"
+            ]
+        },
+        {
+            "name": "openai",
+            "display_name": "OpenAI",
+            "models": [
+                "gpt-3.5-turbo",
+                "gpt-4",
+                "gpt-4-turbo"
+            ]
+        },
+        {
+            "name": "anthropic",
+            "display_name": "Anthropic",
+            "models": [
+                "claude-3-opus-20240229",
+                "claude-3-sonnet-20240229",
+                "claude-3-haiku-20240307"
+            ]
+        },
+        {
+            "name": "google",
+            "display_name": "Google",
+            "models": [
+                "gemini-pro",
+                "gemini-ultra"
+            ]
+        }
+    ]
+    
+    return jsonify({"providers": providers})
 
 @app.route('/api/read_file', methods=['GET'])
 def read_file():

@@ -6,6 +6,11 @@ This guide will help you get the Agentic Software-Development Tool up and runnin
 
 - Docker and Docker Compose installed on your system
 - Basic familiarity with terminal commands
+- API tokens (all optional):
+  - Huggingface API token (for Huggingface models)
+  - OpenAI API key (for GPT models)
+  - Anthropic API key (for Claude models)
+  - Google API key (for Gemini models)
 
 ## Installation
 
@@ -83,3 +88,14 @@ docker-compose down
 ```
 
 Your data will be preserved in `~/.agent_history/` for the next session.
+
+## Configuring Models
+
+1. Start the application and navigate to the Settings tab
+2. Select your preferred model provider (Huggingface, OpenAI, Anthropic, Google)
+3. Choose a specific model from the dropdown
+4. Enter your API key for the selected provider
+5. Adjust advanced parameters if needed (temperature, max length, etc.)
+6. Click "Update Model" to apply the changes
+
+The model configuration will be used for all future interactions until changed again.

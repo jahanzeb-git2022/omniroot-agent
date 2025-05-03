@@ -15,10 +15,26 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 # Set default Huggingface token if not provided
-if [ -z "$HUGGINGFACEHUB_API_TOKEN" ]; then
-    echo "HUGGINGFACEHUB_API_TOKEN environment variable is not set."
-    echo "Using default token: your_huggingface_token_here"
-    export HUGGINGFACEHUB_API_TOKEN="your_huggingface_token_here"
+if [ -z "$HUGGINGFACE_API_KEY" ]; then
+    echo "HUGGINGFACE_API_KEY environment variable is not set."
+    echo "Using default token: YOUR_HUGGINGFACE_TOKEN"
+    export HUGGINGFACE_API_KEY="YOUR_HUGGINGFACE_TOKEN"
+fi
+
+# Check for other API keys
+if [ -z "$OPENAI_API_KEY" ]; then
+    echo "OPENAI_API_KEY environment variable is not set."
+    echo "OpenAI models will not be available unless configured in the UI."
+fi
+
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+    echo "ANTHROPIC_API_KEY environment variable is not set."
+    echo "Anthropic models will not be available unless configured in the UI."
+fi
+
+if [ -z "$GOOGLE_API_KEY" ]; then
+    echo "GOOGLE_API_KEY environment variable is not set."
+    echo "Google models will not be available unless configured in the UI."
 fi
 
 # Create directory for agent history

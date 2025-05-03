@@ -20,10 +20,26 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 REM Set default Huggingface token if not provided
-IF "%HUGGINGFACEHUB_API_TOKEN%"=="" (
-    echo HUGGINGFACEHUB_API_TOKEN environment variable is not set.
+IF "%HUGGINGFACE_API_KEY%"=="" (
+    echo HUGGINGFACE_API_KEY environment variable is not set.
     echo Using default token: YOUR_HUGGINGFACE_TOKEN
-    SET HUGGINGFACEHUB_API_TOKEN=YOUR_HUGGINGFACE_TOKEN
+    SET HUGGINGFACE_API_KEY=YOUR_HUGGINGFACE_TOKEN
+)
+
+REM Check for other API keys
+IF "%OPENAI_API_KEY%"=="" (
+    echo OPENAI_API_KEY environment variable is not set.
+    echo OpenAI models will not be available unless configured in the UI.
+)
+
+IF "%ANTHROPIC_API_KEY%"=="" (
+    echo ANTHROPIC_API_KEY environment variable is not set.
+    echo Anthropic models will not be available unless configured in the UI.
+)
+
+IF "%GOOGLE_API_KEY%"=="" (
+    echo GOOGLE_API_KEY environment variable is not set.
+    echo Google models will not be available unless configured in the UI.
 )
 
 REM Create directory for agent history

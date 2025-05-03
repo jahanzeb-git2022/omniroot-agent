@@ -5,7 +5,7 @@ This module handles the combination of buffer and summary memory for efficient c
 import os
 import json
 from langchain.memory import ConversationBufferMemory, ConversationSummaryMemory
-from langchain.llms import HuggingFaceHub
+from backend.api.llm_manager import get_llm, DEFAULT_CONFIGS
 
 class EnhancedMemoryManager:
     """
@@ -13,13 +13,14 @@ class EnhancedMemoryManager:
     and summary memory for older workflows to optimize token usage.
     """
     
-    def __init__(self, history_path="/host_home/.agent_history", max_buffer_workflows=5):
+    def __init__(self, history_path="/host_home/.agent_history", max_buffer_workflows=5, llm_config=None):
         """
         Initialize the memory manager.
         
         Args:
             history_path (str): Path to store history files
             max_buffer_workflows (int): Maximum number of workflows to keep in buffer memory
+            llm_config (dict, optional): Configuration for the LLM
         """
         self.history_path = history_path
         self.max_buffer_workflows = max_buffer_workflows
@@ -32,12 +33,11 @@ class EnhancedMemoryManager:
         # Initialize memories
         self.buffer_memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
         
-        # Initialize the LLM for summary memory
-        self.llm = HuggingFaceHub(
-            repo_id="Qwen/Qwen3-235B-A22B",
-            huggingfacehub_api_token=os.environ.get("HUGGINGFACEHUB_API_TOKEN", "YOUR_HUGGINGFACE_TOKEN"),
-            model_kwargs={"temperature": 0.2, "max_length": 2048}
-        )
+        # Use default config if none provided
+        self.llm_config = llm_config or DEFAULT_CONFIGS["huggingface"]
+        
+        # Initialize the LLM for summary memory using the LiteLLM wrapper
+        self.llm = get_llm(self.llm_config)
         
         self.summary_memory = ConversationSummaryMemory(
             llm=self.llm,

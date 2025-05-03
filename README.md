@@ -11,7 +11,8 @@ A Dockerized Agentic AI tool that provides a powerful interface for software dev
 - **Persistent Memory**: Uses LangChain's ConversationBufferMemory to retain all chat and workflow state
 - **Modern UI**: React frontend with Monaco Editor for code editing
 - **Structured Workflows**: Organizes work into sessions, workflows, and steps
-- **Powered by Qwen3-235B-A22B**: Uses Huggingface's powerful LLM for AI capabilities
+- **Multiple LLM Support**: Switch between different models from Huggingface, OpenAI, Anthropic, and Google
+- **Model Configuration**: Easily configure model parameters and API keys through the UI
 
 ## Architecture
 
@@ -24,7 +25,11 @@ A Dockerized Agentic AI tool that provides a powerful interface for software dev
 ### Prerequisites
 
 - Docker and Docker Compose
-- A Huggingface API token (optional, default is provided)
+- API tokens (all optional):
+  - Huggingface API token (for Huggingface models)
+  - OpenAI API key (for GPT models)
+  - Anthropic API key (for Claude models)
+  - Google API key (for Gemini models)
 
 ### Quick Installation (Recommended)
 
@@ -100,6 +105,14 @@ Use the Agentic Code tab to:
 - Save changes directly to your files
 - Work with the AI to modify code
 
+### Settings
+
+Use the Settings tab to:
+- Configure the AI model (Huggingface, OpenAI, Anthropic, Google)
+- Set API keys for different providers
+- Adjust model parameters (temperature, max length, etc.)
+- View information about the application
+
 ## Example Workflows
 
 ### 1. Creating and Testing an Algorithm
@@ -159,7 +172,12 @@ Final Answer:
 
 ## Technical Details
 
-- The tool uses Qwen3-235B-A22B from Huggingface for AI capabilities
+- The tool supports multiple AI models:
+  - Huggingface models (Qwen3, Llama, Mistral, Gemma)
+  - OpenAI models (GPT-3.5, GPT-4)
+  - Anthropic models (Claude 3 Opus, Sonnet, Haiku)
+  - Google models (Gemini Pro, Gemini Ultra)
+- Model switching is handled through LiteLLM for a unified interface
 - All interactions are stored in `~/.agent_history/history.txt`
 - The Docker container exposes ports 3000 (React) and 5000 (Flask)
 

@@ -4,16 +4,17 @@ This file sets up the LangChain agent with the appropriate tools and memory.
 """
 import os
 from langchain.agents import initialize_agent, AgentType
-from langchain.llms import HuggingFaceHub
 from langchain.memory import ConversationBufferMemory
+from backend.api.llm_manager import get_llm, DEFAULT_CONFIGS
 
-def create_agent(tools, memory=None):
+def create_agent(tools, memory=None, llm_config=None):
     """
     Create a LangChain agent with the specified tools and memory.
     
     Args:
         tools (list): List of LangChain tools to use with the agent
         memory (ConversationBufferMemory, optional): Memory to use with the agent
+        llm_config (dict, optional): Configuration for the LLM
     
     Returns:
         Agent: Initialized LangChain agent
@@ -22,16 +23,12 @@ def create_agent(tools, memory=None):
     if memory is None:
         memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     
-    # Initialize the LLM (Qwen3-235B-A22B from Huggingface)
-    llm = HuggingFaceHub(
-        repo_id="Qwen/Qwen3-235B-A22B",
-        huggingfacehub_api_token=os.environ.get("HUGGINGFACEHUB_API_TOKEN", "YOUR_HUGGINGFACE_TOKEN"),
-        model_kwargs={
-            "temperature": 0.2,
-            "max_length": 4096,
-            "top_p": 0.9
-        }
-    )
+    # Use default config if none provided
+    if llm_config is None:
+        llm_config = DEFAULT_CONFIGS["huggingface"]
+    
+    # Initialize the LLM using the LiteLLM wrapper
+    llm = get_llm(llm_config)
     
     # Initialize the agent
     agent = initialize_agent(

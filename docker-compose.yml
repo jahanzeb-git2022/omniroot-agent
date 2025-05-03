@@ -11,7 +11,11 @@ services:
     volumes:
       - ${HOME}:/host_home  # Mount user's home directory
     environment:
-      - HUGGINGFACEHUB_API_TOKEN=${HUGGINGFACEHUB_API_TOKEN:-your_huggingface_token_here}  # Pass API key from host or use default
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-YOUR_HUGGINGFACE_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - AZURE_API_KEY=${AZURE_API_KEY:-}
     restart: unless-stopped
     tty: true
     stdin_open: true
