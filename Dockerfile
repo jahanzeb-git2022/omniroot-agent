@@ -1,46 +1,40 @@
-# Use Node.js as base image
+# Use Node.js slim image as base
 FROM node:18-slim
 
-# 1) Install python3-venv and build tools (needed for virtual environments)
+# Install Python and required tools
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-venv \
-    python3-dev \
-    build-essential \
     bash \
-    curl \
-    git \
-  && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-# 2) Create and activate a venv so pip installs go there, not into the system Python
+# Create and activate virtual environment
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
 
-# Create sandbox directory for mounted files
+# Create sandbox directory
 RUN mkdir -p /sandbox/code
 
-# 3) Copy backend requirements and install dependencies inside the venv
+# Install backend dependencies
 COPY backend/requirements.txt /app/backend/
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
 # Copy backend code
 COPY backend/ /app/backend/
 
-# Copy frontend package.json and install dependencies
+# Install frontend dependencies
 COPY frontend/package.json frontend/package-lock.json* /app/frontend/
 WORKDIR /app/frontend
 RUN npm install
 
-# Copy frontend code
+# Copy and build frontend
 COPY frontend/ /app/frontend/
-
-# Build frontend
 RUN npm run build
 
-# Create directory for agent history
+# Create agent history directory
 RUN mkdir -p /host_home/.agent_history
 
 # Set working directory back to app root
@@ -51,8 +45,8 @@ RUN echo '#!/bin/bash\n\
 # Ensure history directory exists\n\
 mkdir -p /host_home/.agent_history\n\
 \n\
-# Set Huggingface API token if not provided\n\
-export HUGGINGFACEHUB_API_TOKEN=${HUGGINGFACEHUB_API_TOKEN:-\"your_huggingface_token_here\"}\n\
+# Set Hugging Face API key if not provided\n\
+export HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-\"your_huggingface_token_here\"}\n\
 \n\
 # Start Flask backend\n\
 cd /app/backend\n\

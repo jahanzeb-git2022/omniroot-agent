@@ -9,7 +9,7 @@ services:
     volumes:
       - ${HOME}:/host_home  # Mount user's home directory
     environment:
-      - HUGGINGFACEHUB_API_TOKEN=${HUGGINGFACEHUB_API_TOKEN:-your_huggingface_token_here}  # Pass API key from host or use default
+      - HUGGINGFACEHUB_API_TOKEN=${HUGGINGFACEHUB_API_TOKEN:-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}  # Pass API key from host or use default
     restart: unless-stopped
     tty: true
     stdin_open: true

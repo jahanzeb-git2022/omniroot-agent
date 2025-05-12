@@ -9,7 +9,7 @@ services:
     volumes:
       - ${HOME}:/host_home  # Mount user's home directory
     environment:
-      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-YOUR_HUGGINGFACE_TOKEN}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-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}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
