@@ -1,11 +1,13 @@
 /**
  * Code page component with Monaco editor for editing files.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Editor from '@monaco-editor/react';
 import axios from 'axios';
+import { ThemeContext } from '../context/ThemeContext';
 
-const CodePage = () => {
+const CodePage = ({ sessionId, workflowId }) => {
+  const { isDarkMode } = useContext(ThemeContext);
   const [filePath, setFilePath] = useState('');
   const [fileContent, setFileContent] = useState('');
   const [status, setStatus] = useState('');
@@ -20,7 +22,7 @@ const CodePage = () => {
     setStatus('Loading file...');
     
     try {
-      const response = await axios.get(`http://localhost:5000/api/read_file?file_path=${encodeURIComponent(filePath)}`);
+      const response = await axios.get(`http://localhost:5000/api/read_file?file_path=${encodeURIComponent(filePath)}&session_id=${sessionId}&workflow_id=${workflowId || ''}`);
       
       if (response.data.status === 'success') {
         setFileContent(response.data.content);
@@ -54,7 +56,9 @@ const CodePage = () => {
     try {
       const response = await axios.post('http://localhost:5000/api/edit_file', {
         file_path: filePath,
-        content: fileContent
+        content: fileContent,
+        session_id: sessionId,
+        workflow_id: workflowId || ''
       });
       
       if (response.data.status === 'success') {
@@ -130,30 +134,30 @@ const CodePage = () => {
   };
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6">
-        <h3 className="text-lg leading-6 font-medium text-gray-900">
-          Agentic Code Editor
+    <div className="h-full flex flex-col bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+          Code Editor
         </h3>
-        <p className="mt-1 max-w-2xl text-sm text-gray-500">
-          Edit files in the mounted filesystem
+        <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+          Edit files in the filesystem
         </p>
       </div>
       
-      <div className="border-t border-gray-200 p-4">
+      <div className="flex-1 flex flex-col p-4 overflow-hidden">
         <form onSubmit={handleSubmit} className="mb-4">
           <div className="flex">
             <input
               type="text"
               value={filePath}
               onChange={handleFilePathChange}
-              placeholder="Enter file path (e.g., /sandbox/code/myfile.js)"
-              className="flex-1 p-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter file path (e.g., /workspace/myfile.js)"
+              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               disabled={isLoading}
             />
             <button
               type="submit"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-none hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-none hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
               disabled={isLoading}
             >
               Load
@@ -161,7 +165,7 @@ const CodePage = () => {
             <button
               type="button"
               onClick={saveFile}
-              className="bg-green-600 text-white px-4 py-2 rounded-r-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              className="bg-green-600 text-white px-4 py-2 rounded-r-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
               disabled={isLoading}
             >
               Save
@@ -171,13 +175,13 @@ const CodePage = () => {
         
         {recentFiles.length > 0 && (
           <div className="mb-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Files:</h4>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recent Files:</h4>
             <div className="flex flex-wrap gap-2">
               {recentFiles.map((path, index) => (
                 <button
                   key={index}
                   onClick={() => handleRecentFileClick(path)}
-                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded"
+                  className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded"
                 >
                   {path.split('/').pop()}
                 </button>
@@ -186,25 +190,32 @@ const CodePage = () => {
           </div>
         )}
         
-        <div className="border border-gray-300 rounded-md overflow-hidden">
+        <div className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
           <Editor
-            height="70vh"
+            height="100%"
             language={getLanguage()}
             value={fileContent}
             onChange={handleEditorChange}
-            theme="light"
+            theme={isDarkMode ? "vs-dark" : "light"}
             options={{
               minimap: { enabled: true },
               scrollBeyondLastLine: false,
               fontSize: 14,
-              wordWrap: 'on'
+              wordWrap: 'on',
+              automaticLayout: true
             }}
           />
         </div>
         
-        <div className="mt-2 text-sm text-gray-500">
-          {status}
-        </div>
+        {status && (
+          <div className={`mt-4 p-3 rounded-md ${
+            status.includes('Error') 
+              ? 'bg-red-50 dark:bg-red-900 text-red-800 dark:text-red-200' 
+              : 'bg-green-50 dark:bg-green-900 text-green-800 dark:text-green-200'
+          }`}>
+            {status}
+          </div>
+        )}
       </div>
     </div>
   );
