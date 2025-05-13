@@ -49,7 +49,10 @@ class LiteLLMWrapper(LLM):
         elif self.provider == "anthropic":
             os.environ["ANTHROPIC_API_KEY"] = self.api_key or os.environ.get("ANTHROPIC_API_KEY", "")
         elif self.provider == "huggingface":
-            os.environ["HUGGINGFACE_API_KEY"] = self.api_key or os.environ.get("HUGGINGFACE_API_KEY", "")
+            # Handle both environment variable names for Hugging Face
+            hf_key = self.api_key or os.environ.get("HUGGINGFACE_API_KEY", os.environ.get("HUGGINGFACEHUB_API_TOKEN", ""))
+            os.environ["HUGGINGFACE_API_KEY"] = hf_key
+            os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_key  # Set both for compatibility
         elif self.provider == "google":
             os.environ["GOOGLE_API_KEY"] = self.api_key or os.environ.get("GOOGLE_API_KEY", "")
         elif self.provider == "azure":
@@ -99,7 +102,7 @@ DEFAULT_CONFIGS = {
     "huggingface": {
         "provider": "huggingface",
         "model_name": "Qwen/Qwen3-235B-A22B",
-        "api_key": os.environ.get("HUGGINGFACE_API_KEY", ""),
+        "api_key": os.environ.get("HUGGINGFACE_API_KEY", os.environ.get("HUGGINGFACEHUB_API_TOKEN", "")),
         "model_kwargs": {
             "temperature": 0.2,
             "max_length": 4096,
