@@ -1,7 +1,13 @@
 /**
  * Main App component that sets up routing and layout.
+ * 
+ * Updated to implement workflow-per-task model:
+ * - Each user task creates a new workflow automatically
+ * - Removed manual New Session and New Workflow buttons
+ * - Uses ConversationBufferMemory for intra-workflow context
+ * - Uses ConversationSummaryMemory for inter-workflow context
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import ChatPage from './pages/ChatPage';
 import CodePage from './pages/CodePage';
@@ -14,31 +20,58 @@ import axios from 'axios';
 function App() {
   // Generate session ID when the app starts
   const [sessionId, setSessionId] = useState(uuidv4());
-  const [workflowId, setWorkflowId] = useState(uuidv4());
+  const [workflowId, setWorkflowId] = useState(null);
   const [stepId, setStepId] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [workflowName, setWorkflowName] = useState('');
-  const [sessionName, setSessionName] = useState('');
+  const [sessionName, setSessionName] = useState(`Session ${new Date().toLocaleString()}`);
   
-  // Function to start a new workflow
-  const startNewWorkflow = () => {
-    const newWorkflowId = uuidv4();
-    setWorkflowId(newWorkflowId);
-    setWorkflowName(`Workflow ${new Date().toLocaleString()}`);
-    setStepId(0);
-  };
-  
-  // Function to start a new session
-  const startNewSession = () => {
-    const newSessionId = uuidv4();
-    setSessionId(newSessionId);
-    setSessionName(`Session ${new Date().toLocaleString()}`);
-    startNewWorkflow();
-  };
+  // Initialize session on component mount
+  useEffect(() => {
+    // Check if backend is available
+    axios.get('http://localhost:5000/api/health')
+      .then(response => {
+        console.log('Backend health check:', response.data);
+      })
+      .catch(error => {
+        console.error('Backend health check failed:', error);
+      });
+      
+    // Initialize session
+    const initSession = async () => {
+      try {
+        // Create a session with the current ID
+        await axios.get(`http://localhost:5000/api/session/${sessionId}`)
+          .then(response => {
+            if (response.data && response.data.name) {
+              setSessionName(response.data.name);
+            }
+          })
+          .catch(() => {
+            // Session doesn't exist yet, which is fine for a new session
+            console.log('Creating new session:', sessionId);
+          });
+      } catch (error) {
+        console.error('Error initializing session:', error);
+      }
+    };
+    
+    initSession();
+  }, [sessionId]);
   
   // Function to increment step ID
   const incrementStepId = () => {
     setStepId(prevStepId => prevStepId + 1);
+  };
+  
+  // Function to update workflow ID from chat response
+  const updateWorkflowId = (newWorkflowId, newWorkflowName) => {
+    if (newWorkflowId && newWorkflowId !== workflowId) {
+      setWorkflowId(newWorkflowId);
+      if (newWorkflowName) {
+        setWorkflowName(newWorkflowName);
+      }
+    }
   };
   
   // Function to handle session selection from history
@@ -64,14 +97,18 @@ function App() {
             setStepId(0);
           }
         } else {
-          // If no workflows, start a new one
-          startNewWorkflow();
+          // If no workflows, clear workflow ID to trigger new workflow creation
+          setWorkflowId(null);
+          setWorkflowName('');
+          setStepId(0);
         }
       })
       .catch(error => {
         console.error('Error fetching session:', error);
-        // If error, start a new workflow in this session
-        startNewWorkflow();
+        // If error, clear workflow ID to trigger new workflow creation
+        setWorkflowId(null);
+        setWorkflowName('');
+        setStepId(0);
       });
   };
   
@@ -137,18 +174,6 @@ function App() {
                 >
                   {showHistory ? 'Hide History' : 'Show History'}
                 </button>
-                <button
-                  onClick={startNewWorkflow}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  New Workflow
-                </button>
-                <button
-                  onClick={startNewSession}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                >
-                  New Session
-                </button>
               </div>
             </div>
           </div>
@@ -186,6 +211,7 @@ function App() {
                     stepId={stepId} 
                     incrementStepId={incrementStepId}
                     workflowName={workflowName}
+                    updateWorkflowId={updateWorkflowId}
                   />
                 } />
                 <Route path="/code" element={<CodePage />} />

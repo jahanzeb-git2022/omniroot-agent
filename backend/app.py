@@ -80,25 +80,41 @@ except Exception as e:
 def chat():
     """
     API endpoint for chat interactions with the agent.
-    Expects: {"message": str, "session_id": str, "workflow_id": str, "step_id": int}
-    Returns: {"response": str}
+    Expects: {"message": str, "session_id": str, "step_id": int}
+    Returns: {"response": str, "workflow_id": str}
+    
+    Note: Each new task (first message in a conversation) creates a new workflow.
+    Subsequent messages continue in the same workflow.
     """
     try:
+        from uuid import uuid4
+        
         data = request.json
         message = data.get('message', '')
         session_id = data.get('session_id', 'default_session')
-        workflow_id = data.get('workflow_id', 'default_workflow')
         step_id = data.get('step_id', 0)
-        workflow_name = data.get('workflow_name', None)
+        
+        # Check if this is a continuation of an existing workflow or a new task
+        workflow_id = data.get('workflow_id')
+        is_new_task = step_id == 0 or not workflow_id
+        
+        if is_new_task:
+            # Create a new workflow for this task
+            workflow_id = str(uuid4())
+            workflow_name = f"Task: {message[:50]}..." if len(message) > 50 else f"Task: {message}"
+            logger.info(f"Creating new workflow for task: {workflow_id} - {workflow_name}")
+        else:
+            workflow_name = data.get('workflow_name')
+            logger.info(f"Continuing workflow: {workflow_id}, step={step_id}")
         
         logger.info(f"Chat request: session={session_id}, workflow={workflow_id}, step={step_id}")
         
         # Start or continue session and workflow
         memory_manager.start_session(session_id)
-        memory_manager.start_workflow(workflow_id, workflow_name)
+        memory_manager.start_workflow(workflow_id, workflow_name, task=message if is_new_task else None)
         
-        # Update agent with current memory
-        agent.memory = memory_manager.get_memory_for_llm()
+        # Update agent with current workflow memory
+        agent.memory = memory_manager.get_memory_for_llm(workflow_id)
         
         # Add metadata to the message
         message_with_metadata = f"{message}\n[Metadata: session_id={session_id}, workflow_id={workflow_id}, step_id={step_id}]"
@@ -111,10 +127,17 @@ def chat():
         memory_manager.add_interaction(message, response, step_id)
         
         logger.info(f"Chat response generated: {len(response)} chars")
-        return jsonify({"response": response})
+        return jsonify({
+            "response": response,
+            "workflow_id": workflow_id
+        })
     except Exception as e:
         logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
-        return jsonify({"error": str(e), "response": "I encountered an error processing your request. Please try again."}), 500
+        return jsonify({
+            "error": str(e), 
+            "response": "I encountered an error processing your request. Please try again.",
+            "workflow_id": data.get('workflow_id', 'error_workflow')
+        }), 500
 
 @app.route('/api/sessions', methods=['GET'])
 def get_sessions():

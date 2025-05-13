@@ -3,10 +3,15 @@ LLM Manager module for the Agentic Software-Development tool.
 This module provides a unified interface to different LLM providers using LiteLLM.
 """
 import os
+import time
+import logging
 from typing import Dict, Any, Optional, List
 import litellm
 from langchain.llms.base import LLM
 from langchain.callbacks.manager import CallbackManagerForLLMRun
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class LiteLLMWrapper(LLM):
     """
@@ -66,7 +71,12 @@ class LiteLLMWrapper(LLM):
             model = self.model_name
         
         try:
+            # Add a 2-second delay before each API call to avoid rate limiting
+            logger.info(f"Adding 2-second delay before LLM API call to {self.provider}/{self.model_name}")
+            time.sleep(2)
+            
             # Call LiteLLM
+            logger.info(f"Calling LLM: {model}")
             response = litellm.completion(
                 model=model,
                 prompt=prompt,
@@ -74,10 +84,11 @@ class LiteLLMWrapper(LLM):
                 **{**self.model_kwargs, **kwargs}
             )
             
+            logger.info(f"LLM response received, length: {len(response.choices[0].text)}")
             return response.choices[0].text
         except Exception as e:
             # Log the error and return a helpful message
-            print(f"LiteLLM Error: {str(e)}")
+            logger.error(f"LiteLLM Error: {str(e)}", exc_info=True)
             return f"Error calling LLM: {str(e)}"
 
 def get_llm(config):

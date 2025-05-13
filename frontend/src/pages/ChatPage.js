@@ -1,10 +1,14 @@
 /**
  * Chat page component for interacting with the AI agent.
+ * 
+ * Updated to implement workflow-per-task model:
+ * - Each new task (first message) creates a new workflow
+ * - Uses the updateWorkflowId callback to update the parent component
  */
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const ChatPage = ({ sessionId, workflowId, stepId, incrementStepId, workflowName }) => {
+const ChatPage = ({ sessionId, workflowId, stepId, incrementStepId, workflowName, updateWorkflowId }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -81,10 +85,11 @@ const ChatPage = ({ sessionId, workflowId, stepId, incrementStepId, workflowName
 
     try {
       // Send message to backend
+      // The backend will create a new workflow for each task (first message)
       const response = await axios.post('http://localhost:5000/api/chat', {
         message: input,
         session_id: sessionId,
-        workflow_id: workflowId,
+        workflow_id: workflowId, // This will be null for a new task
         workflow_name: workflowName,
         step_id: stepId
       });
@@ -97,6 +102,15 @@ const ChatPage = ({ sessionId, workflowId, stepId, incrementStepId, workflowName
         step_id: stepId
       };
       setMessages(prev => [...prev, aiMessage]);
+      
+      // Update workflow ID if this was a new task
+      if (response.data.workflow_id && (!workflowId || response.data.workflow_id !== workflowId)) {
+        // Call the updateWorkflowId function from props
+        if (updateWorkflowId) {
+          const taskPreview = input.length > 50 ? `${input.substring(0, 50)}...` : input;
+          updateWorkflowId(response.data.workflow_id, `Task: ${taskPreview}`);
+        }
+      }
       
       // Increment step ID for next interaction
       incrementStepId();
