@@ -128,19 +128,19 @@ const ModelSelector = () => {
   };
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Model Configuration</h3>
+    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg p-6">
+      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Model Configuration</h3>
       
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Provider
           </label>
           <select
             name="provider"
             value={config.provider}
             onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             disabled={isLoading}
           >
             {providers.map(provider => (
@@ -152,7 +152,7 @@ const ModelSelector = () => {
         </div>
         
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Model Name
           </label>
           {!customModel ? (
@@ -161,7 +161,7 @@ const ModelSelector = () => {
                 name="model_name"
                 value={config.model_name}
                 onChange={handleChange}
-                className="flex-1 p-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="flex-1 p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 disabled={isLoading}
               >
                 {getModelsForProvider().map(model => (
@@ -171,7 +171,7 @@ const ModelSelector = () => {
               <button
                 type="button"
                 onClick={() => setCustomModel(true)}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-r-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-r-md hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 disabled={isLoading}
               >
                 Custom
@@ -185,7 +185,7 @@ const ModelSelector = () => {
                 value={config.model_name}
                 onChange={handleChange}
                 placeholder="Enter custom model name"
-                className="flex-1 p-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="flex-1 p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 disabled={isLoading}
               />
               <button
@@ -197,7 +197,7 @@ const ModelSelector = () => {
                     model_name: getModelsForProvider()[0] || ''
                   }));
                 }}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-r-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-r-md hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 disabled={isLoading}
               >
                 Predefined
@@ -207,7 +207,7 @@ const ModelSelector = () => {
         </div>
         
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             API Key
           </label>
           <input
@@ -216,10 +216,10 @@ const ModelSelector = () => {
             value={config.api_key}
             onChange={handleChange}
             placeholder="Enter your API key"
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             disabled={isLoading}
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Your API key is only stored in memory and never persisted to disk.
           </p>
         </div>
@@ -228,19 +228,19 @@ const ModelSelector = () => {
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="text-sm text-indigo-600 hover:text-indigo-800"
+            className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
           >
             {showAdvanced ? 'Hide Advanced Settings' : 'Show Advanced Settings'}
           </button>
         </div>
         
         {showAdvanced && (
-          <div className="mb-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Advanced Settings</h4>
+          <div className="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Advanced Settings</h4>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Temperature
                 </label>
                 <input
@@ -251,16 +251,16 @@ const ModelSelector = () => {
                   min="0"
                   max="2"
                   step="0.1"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   disabled={isLoading}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Controls randomness (0-2)
                 </p>
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Max Length
                 </label>
                 <input
@@ -271,16 +271,16 @@ const ModelSelector = () => {
                   min="1"
                   max="32000"
                   step="1"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   disabled={isLoading}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Maximum tokens to generate
                 </p>
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Top P
                 </label>
                 <input
@@ -291,10 +291,10 @@ const ModelSelector = () => {
                   min="0"
                   max="1"
                   step="0.01"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   disabled={isLoading}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Nucleus sampling parameter (0-1)
                 </p>
               </div>
@@ -314,7 +314,11 @@ const ModelSelector = () => {
       </form>
       
       {status && (
-        <div className={`mt-4 p-3 rounded-md ${status.includes('Error') ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'}`}>
+        <div className={`mt-4 p-3 rounded-md ${
+          status.includes('Error') 
+            ? 'bg-red-50 dark:bg-red-900 text-red-800 dark:text-red-200' 
+            : 'bg-green-50 dark:bg-green-900 text-green-800 dark:text-green-200'
+        }`}>
           {status}
         </div>
       )}

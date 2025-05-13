@@ -3,17 +3,20 @@
  * 
  * Updated to implement workflow-per-task model:
  * - Each user task creates a new workflow automatically
- * - Removed manual New Session and New Workflow buttons
  * - Uses ConversationBufferMemory for intra-workflow context
  * - Uses ConversationSummaryMemory for inter-workflow context
+ * - New UI layout with sidebar, chat container, and environment tabs
  */
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import ChatPage from './pages/ChatPage';
-import CodePage from './pages/CodePage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
-import HistorySidebar from './components/HistorySidebar';
+import DocumentationPage from './pages/DocumentationPage';
+import ProfilePage from './pages/ProfilePage';
+import Sidebar from './components/Sidebar';
+import EnvironmentTabs from './components/EnvironmentTabs';
+import { ThemeProvider } from './context/ThemeContext';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
@@ -22,7 +25,6 @@ function App() {
   const [sessionId, setSessionId] = useState(uuidv4());
   const [workflowId, setWorkflowId] = useState(null);
   const [stepId, setStepId] = useState(0);
-  const [showHistory, setShowHistory] = useState(false);
   const [workflowName, setWorkflowName] = useState('');
   const [sessionName, setSessionName] = useState(`Session ${new Date().toLocaleString()}`);
   
@@ -72,6 +74,14 @@ function App() {
         setWorkflowName(newWorkflowName);
       }
     }
+  };
+  
+  // Function to start a new conversation
+  const startNewConversation = () => {
+    // Keep the same session but clear workflow to trigger new workflow creation
+    setWorkflowId(null);
+    setWorkflowName('');
+    setStepId(0);
   };
   
   // Function to handle session selection from history
@@ -137,97 +147,81 @@ function App() {
       });
   };
   
-  // Toggle history sidebar
-  const toggleHistory = () => {
-    setShowHistory(!showHistory);
-  };
-  
-  return (
-    <Router>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <nav className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex">
-                <div className="flex-shrink-0 flex items-center">
-                  <h1 className="text-xl font-bold text-gray-900">Agentic Dev Tool</h1>
-                </div>
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                  <Link to="/" className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    Chat
-                  </Link>
-                  <Link to="/code" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    Agentic Code
-                  </Link>
-                  <Link to="/history" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    History
-                  </Link>
-                  <Link to="/settings" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    Settings
-                  </Link>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={toggleHistory}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  {showHistory ? 'Hide History' : 'Show History'}
-                </button>
-              </div>
+  // AppContent component to access current location
+  const AppContent = () => {
+    const location = useLocation();
+    const isHomePage = location.pathname === '/';
+    
+    return (
+      <div className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
+        {/* Sidebar */}
+        <Sidebar onNewConversation={startNewConversation} />
+        
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Status Bar */}
+          <div className="bg-white dark:bg-gray-800 shadow-sm p-2 border-b border-gray-200 dark:border-gray-700">
+            <div className="max-w-7xl mx-auto px-2">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="font-medium">Session:</span> {sessionName || sessionId}
+                <span className="mx-2">|</span>
+                <span className="font-medium">Workflow:</span> {workflowName || 'New Conversation'}
+                <span className="mx-2">|</span>
+                <span className="font-medium">Step:</span> {stepId}
+              </p>
             </div>
           </div>
-        </nav>
-
-        <div className="flex-1 flex overflow-hidden">
-          {showHistory && (
-            <div className="w-64 flex-shrink-0">
-              <HistorySidebar 
-                onSelectSession={handleSelectSession}
-                onSelectWorkflow={handleSelectWorkflow}
-                currentSessionId={sessionId}
-                currentWorkflowId={workflowId}
-              />
-            </div>
-          )}
           
-          <div className="flex-1 overflow-auto py-6">
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="mb-4 bg-blue-50 p-3 rounded-md border border-blue-200">
-                <p className="text-sm text-blue-800">
-                  <span className="font-medium">Current Session:</span> {sessionName || sessionId}
-                  <span className="mx-2">|</span>
-                  <span className="font-medium">Current Workflow:</span> {workflowName || workflowId}
-                  <span className="mx-2">|</span>
-                  <span className="font-medium">Step:</span> {stepId}
-                </p>
+          {/* Content Area */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Main Content Area */}
+            <div className={`${isHomePage ? 'w-1/2' : 'w-full'} overflow-auto`}>
+              <div className="h-full p-4">
+                <Routes>
+                  <Route path="/" element={
+                    <ChatPage 
+                      sessionId={sessionId} 
+                      workflowId={workflowId} 
+                      stepId={stepId} 
+                      incrementStepId={incrementStepId}
+                      workflowName={workflowName}
+                      updateWorkflowId={updateWorkflowId}
+                    />
+                  } />
+                  <Route path="/history" element={
+                    <HistoryPage 
+                      onSelectSession={handleSelectSession}
+                      onSelectWorkflow={handleSelectWorkflow}
+                    />
+                  } />
+                  <Route path="/documentation" element={<DocumentationPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                </Routes>
               </div>
-              
-              <Routes>
-                <Route path="/" element={
-                  <ChatPage 
-                    sessionId={sessionId} 
-                    workflowId={workflowId} 
-                    stepId={stepId} 
-                    incrementStepId={incrementStepId}
-                    workflowName={workflowName}
-                    updateWorkflowId={updateWorkflowId}
-                  />
-                } />
-                <Route path="/code" element={<CodePage />} />
-                <Route path="/history" element={
-                  <HistoryPage 
-                    onSelectSession={handleSelectSession}
-                    onSelectWorkflow={handleSelectWorkflow}
-                  />
-                } />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Routes>
-            </main>
+            </div>
+            
+            {/* Environment Tabs (only shown on home page) */}
+            {isHomePage && (
+              <div className="w-1/2 border-l border-gray-200 dark:border-gray-700">
+                <EnvironmentTabs 
+                  sessionId={sessionId}
+                  workflowId={workflowId}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </Router>
+    );
+  };
+  
+  return (
+    <ThemeProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </ThemeProvider>
   );
 }
 

@@ -311,12 +311,15 @@ def get_model_providers():
 def read_file():
     """
     API endpoint to read a file.
-    Expects: query parameter "file_path"
+    Expects: query parameters "file_path", "session_id", "workflow_id"
     Returns: {"content": str, "status": "success"|"error", "message": str}
     """
     try:
         file_path = request.args.get('file_path', '')
-        logger.info(f"Reading file: {file_path}")
+        session_id = request.args.get('session_id', 'default_session')
+        workflow_id = request.args.get('workflow_id', '')
+        
+        logger.info(f"Reading file: {file_path} (session={session_id}, workflow={workflow_id})")
         
         # Ensure the path is within the mounted directory
         if not file_path.startswith('/sandbox/code/'):
@@ -327,6 +330,30 @@ def read_file():
         
         with open(file_path, 'r') as f:
             content = f.read()
+        
+        # Start or continue session and workflow if provided
+        if session_id and workflow_id:
+            memory_manager.start_session(session_id)
+            memory_manager.start_workflow(workflow_id)
+            
+            # Update agent with current workflow memory
+            agent.memory = memory_manager.get_memory_for_llm(workflow_id)
+            
+            # Add file read to memory if the file is not too large
+            if len(content) <= 1000:
+                # Format the file read as a message for the memory
+                read_msg = f"User read file: {file_path}"
+                result_msg = f"File content:\n```\n{content}\n```"
+                
+                # Add to memory manager
+                memory_manager.add_interaction(read_msg, result_msg)
+            else:
+                # For large files, just note that it was read
+                read_msg = f"User read file: {file_path} ({len(content)} bytes)"
+                result_msg = f"File read successfully."
+                
+                # Add to memory manager
+                memory_manager.add_interaction(read_msg, result_msg)
         
         logger.info(f"File read successfully: {file_path} ({len(content)} bytes)")
         return jsonify({
@@ -353,15 +380,17 @@ def read_file():
 def edit_file():
     """
     API endpoint to edit a file.
-    Expects: {"file_path": str, "content": str}
+    Expects: {"file_path": str, "content": str, "session_id": str, "workflow_id": str}
     Returns: {"status": "success"|"error", "message": str}
     """
     try:
         data = request.json
         file_path = data.get('file_path', '')
         content = data.get('content', '')
+        session_id = data.get('session_id', 'default_session')
+        workflow_id = data.get('workflow_id')
         
-        logger.info(f"Editing file: {file_path} ({len(content)} bytes)")
+        logger.info(f"Editing file: {file_path} ({len(content)} bytes) (session={session_id}, workflow={workflow_id})")
         
         # Ensure the path is within the mounted directory
         if not file_path.startswith('/sandbox/code/'):
@@ -370,8 +399,45 @@ def edit_file():
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         
+        # Check if file exists to determine if this is a create or update operation
+        is_new_file = not os.path.exists(file_path)
+        
+        # Read old content if file exists
+        old_content = ""
+        if not is_new_file:
+            try:
+                with open(file_path, 'r') as f:
+                    old_content = f.read()
+            except Exception as e:
+                logger.warning(f"Could not read old content of {file_path}: {str(e)}")
+        
+        # Write new content
         with open(file_path, 'w') as f:
             f.write(content)
+        
+        # Start or continue session and workflow if provided
+        if session_id and workflow_id:
+            memory_manager.start_session(session_id)
+            memory_manager.start_workflow(workflow_id)
+            
+            # Update agent with current workflow memory
+            agent.memory = memory_manager.get_memory_for_llm(workflow_id)
+            
+            # Add file edit to memory
+            operation = "Created" if is_new_file else "Updated"
+            
+            # Format the file edit as a message for the memory
+            if len(content) > 1000:
+                # For large files, just note that it was edited
+                edit_msg = f"User {operation.lower()} file: {file_path} ({len(content)} bytes)"
+            else:
+                # For smaller files, include the content
+                edit_msg = f"User {operation.lower()} file: {file_path} with content:\n```\n{content}\n```"
+            
+            result_msg = f"File {operation.lower()} successfully."
+            
+            # Add to memory manager
+            memory_manager.add_interaction(edit_msg, result_msg)
         
         logger.info(f"File updated successfully: {file_path}")
         return jsonify({
@@ -389,23 +455,51 @@ def edit_file():
 def execute_shell():
     """
     API endpoint to execute shell commands.
-    Expects: {"command": str}
+    Expects: {"command": str, "session_id": str, "workflow_id": str}
     Returns: {"exit_code": int, "stdout": str, "stderr": str}
     """
     try:
         data = request.json
         command = data.get('command', '')
+        session_id = data.get('session_id', 'default_session')
+        workflow_id = data.get('workflow_id')
         
-        logger.info(f"Executing shell command: {command}")
+        logger.info(f"Executing shell command: {command} (session={session_id}, workflow={workflow_id})")
         
         # Create sandbox directory if it doesn't exist
         os.makedirs('/sandbox/code', exist_ok=True)
+        
+        # Start or continue session and workflow if provided
+        if session_id and workflow_id:
+            memory_manager.start_session(session_id)
+            memory_manager.start_workflow(workflow_id)
+            
+            # Update agent with current workflow memory
+            agent.memory = memory_manager.get_memory_for_llm(workflow_id)
         
         result = shell_tool.run(command)
         
         try:
             result_dict = json.loads(result)
-            logger.info(f"Command executed with exit code: {result_dict.get('exit_code', 'unknown')}")
+            exit_code = result_dict.get('exit_code', 1)
+            stdout = result_dict.get('stdout', '')
+            stderr = result_dict.get('stderr', '')
+            
+            logger.info(f"Command executed with exit code: {exit_code}")
+            
+            # Add command execution to memory if workflow is active
+            if session_id and workflow_id:
+                # Format the command execution as a message for the memory
+                command_msg = f"User executed command: {command}"
+                result_msg = f"Command result (exit code {exit_code}):\n"
+                if stdout:
+                    result_msg += f"STDOUT:\n{stdout}\n"
+                if stderr:
+                    result_msg += f"STDERR:\n{stderr}\n"
+                
+                # Add to memory manager
+                memory_manager.add_interaction(command_msg, result_msg)
+            
             return jsonify(result_dict)
         except json.JSONDecodeError as e:
             logger.error(f"Error parsing shell result: {str(e)}", exc_info=True)
